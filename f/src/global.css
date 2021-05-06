@@ -1,0 +1,83 @@
+/*
+global.css
+全局样式
+*/
+.container,
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+.header {
+  height: 70px;
+  width: 100%;
+  background-color: rgb(3, 19, 48);
+}
+
+.content {
+  height: calc(100% - 70px);
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(20, 1fr);
+  grid-template-rows: repeat(20, 1fr);
+  padding: 10px 10px 10px 10px;
+}
+
+.my_map {
+  grid-row: 1/13;
+  grid-column: 9/21;
+  padding: 5px 5px 5px 5px;
+  border: 2px solid;
+}
+
+.my_input {
+  grid-row: 1/21;
+  grid-column: 1/9;
+  padding: 5px 5px 5px 5px;
+  overflow: auto;
+  border: 2px solid;
+  margin-right: 10px;
+}
+
+.my_display {
+  grid-row: 13/21;
+  grid-column: 9/21;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+  padding: 5px 5px 5px 5px;
+  border: 2px solid;
+  margin-top: 5px;
+}
+
+.my_start {
+  grid-row: 1/11;
+  grid-column: 1/2;
+  padding: 5px 5px 5px 5px;
+}
+
+.my_interact {
+  grid-row: 1/11;
+  grid-column: 2/11;
+  padding: 5px 5px 5px 5px;
+  overflow: auto;
+}
+
+.ant-row.ant-form-item {
+  margin-bottom: 40px;
+}
+
+.ant-form-text {
+  text-align: center;
+  width: 100%;
+  padding: 30px;
+  font-size: large;
+}
+
+.ant-table-content {
+  overflow: auto;
+}
+
+.ant-table-cell {
+  white-space: nowrap;
+}
