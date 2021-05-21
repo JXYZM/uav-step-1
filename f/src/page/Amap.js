@@ -29,23 +29,24 @@ import {
   Rate,
   Upload,
   message,
-  Table,
+  Table
 } from 'antd'
 import {
   MinusCircleOutlined,
   PlusOutlined,
   createFromIconfontCN,
   UploadOutlined,
-  InboxOutlined,
+  InboxOutlined
 } from '@ant-design/icons'
 import load_point from '../resources/load_point'
+import load_map from '../resources/load_map'
 
 const IconFont0 = createFromIconfontCN({
-  scriptUrl: '//at.alicdn.com/t/font_1282563_kns8e1am00d.js',
+  scriptUrl: '//at.alicdn.com/t/font_1282563_kns8e1am00d.js'
 })
 
 const IconFont1 = createFromIconfontCN({
-  scriptUrl: '//at.alicdn.com/t/font_1289406_de15s4r5mdv.js',
+  scriptUrl: '//at.alicdn.com/t/font_1289406_de15s4r5mdv.js'
 })
 
 const { TabPane } = Tabs
@@ -62,20 +63,21 @@ const mapStateToProps = ({ [namespace]: n }) => {
     pInfo: n.position,
     fmInfo: n.flight_mission,
     ftInfo: n.flight_todolist,
+    moInfo: n.model
     // fInfo: n.flight_info,
     // mInfo: n.mission_info,
   }
 }
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = dispatch => {
   return {
-    post_algo_profile: (values) => {
+    post_algo_profile: values => {
       const action = {
         type: `${namespace}/post_algo_profile`,
         payload: {
           type: 0,
-          ...values,
-        },
+          ...values
+        }
       }
       dispatch(action)
     },
@@ -83,17 +85,17 @@ const mapDispatchToProps = (dispatch) => {
       const action = {
         type: `${namespace}/plan`,
         payload: {
-          type: 1,
-        },
+          type: 1
+        }
       }
       dispatch(action)
-    },
+    }
   }
 }
 
 const formItemLayout = {
   labelCol: { span: 6, offset: 0 },
-  wrapperCol: { span: 14, offset: 0 },
+  wrapperCol: { span: 14, offset: 0 }
 }
 
 @connect(mapStateToProps, mapDispatchToProps)
@@ -117,34 +119,54 @@ export default class Amap extends Component {
         'coral',
         'crimson',
         'darkolivegreen',
-        'grey',
+        'grey'
       ],
       button_disabled: true,
       selectedRowKeys: [],
+      need: [
+        '0',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9',
+        '10',
+        '11',
+        '12',
+        '13',
+        '14',
+        '15',
+        '16',
+        '17'
+      ]
     }
     this.amapEvents = {
-      created: (mapInstance) => {
+      created: mapInstance => {
         self.map = mapInstance
-      },
+      }
     }
     this.lineEvents = {
-      created: (ins) => {
+      created: ins => {
         console.log(ins)
       },
       show: () => {
         console.log('line show')
-      },
+      }
     }
     this.toolEvents = {
-      created: (tool) => {
+      created: tool => {
         self.tool = tool
       },
       draw({ obj }) {
         self.drawWhat(obj)
-      },
+      }
     }
     this.mapPlugins = ['ToolBar']
-    this.mapCenter = { longitude: 118.958877, latitude: 32.114745 }
+    this.mapCenter = load_map
   }
 
   display() {
@@ -154,8 +176,9 @@ export default class Amap extends Component {
         key: 'uav' + JSON.stringify(a),
         position: {
           longitude: this.props.pInfo[a][0] / 1000000,
-          latitude: this.props.pInfo[a][1] / 1000000,
+          latitude: this.props.pInfo[a][1] / 1000000
         },
+        id: JSON.stringify(a)
       })
     }
     let temp_path = []
@@ -164,12 +187,12 @@ export default class Amap extends Component {
       let temptemp = []
       temptemp = temptemp.concat({
         longitude: this.props.pInfo[count_out][0] / 1000000,
-        latitude: this.props.pInfo[count_out][1] / 1000000,
+        latitude: this.props.pInfo[count_out][1] / 1000000
       })
       for (let b of a) {
         temptemp = temptemp.concat({
           longitude: this.state.load_point[b['point']].position.longitude,
-          latitude: this.state.load_point[b['point']].position.latitude,
+          latitude: this.state.load_point[b['point']].position.latitude
         })
       }
       temp_path = temp_path.concat({ route: temptemp, key: count_out })
@@ -179,23 +202,27 @@ export default class Amap extends Component {
     return [temp, temp_path]
   }
 
-  onSelectChange = (selectedRowKeys) => {
+  onSelectChange = selectedRowKeys => {
     console.log('selectedRowKeys changed: ', selectedRowKeys)
-    this.setState({ selectedRowKeys })
+    this.setState({ selectedRowKeys, need: selectedRowKeys })
   }
 
   render() {
-    const [load_uav, path] = this.display()
+    var load_uav = []
+    var path = []
+    if (this.props.moInfo === 1) {
+      ;[load_uav, path] = this.display()
+    }
 
-    const onSave = (values) => {
+    const onSave = values => {
       console.log('Received values of form: ', values)
       this.props.post_algo_profile(values)
       this.setState({
-        button_disabled: false,
+        button_disabled: false
       })
     }
 
-    const uploadChange = (info) => {
+    const uploadChange = info => {
       // console.log('Upload event:', e)
       // if (Array.isArray(e)) {
       //   return e
@@ -210,6 +237,13 @@ export default class Amap extends Component {
       }
       if (status === 'done') {
         message.success(`${info.file.name} uploaded successfully.`, 3)
+        // analyze
+        const { response } = info.file
+        if (response.status == 'success') {
+          message.success(`${info.file.name} analyzed successfully.`, 3)
+        } else {
+          message.error(`${info.file.name} analyzed failed.`, 3)
+        }
       } else if (status === 'error') {
         message.error(`${info.file.name} upload failed.`, 3)
       }
@@ -217,7 +251,7 @@ export default class Amap extends Component {
     const { selectedRowKeys } = this.state
     const rowSelection = {
       selectedRowKeys,
-      onChange: this.onSelectChange,
+      onChange: this.onSelectChange
     }
 
     return (
@@ -230,7 +264,7 @@ export default class Amap extends Component {
               left: 50,
               textAlign: 'left',
               color: 'white',
-              fontSize: 24,
+              fontSize: 24
             }}
           >
             <div>
@@ -247,7 +281,7 @@ export default class Amap extends Component {
               center={this.mapCenter}
             >
               <MouseTool events={this.toolEvents} />
-              {this.state.load_point.map((item) => (
+              {this.state.load_point.map(item => (
                 <Marker
                   position={item.position}
                   extData={{ key: item.key }}
@@ -256,26 +290,34 @@ export default class Amap extends Component {
                   events={this.markerEvents}
                 />
               ))}
-              {load_uav.map((item) => (
-                <Marker
-                  position={item.position}
-                  // icon={'//vdata.amap.com/icons/b18/1/2.png'}
-                  offset={{ x: -8, y: -12 }}
-                  title={item.key}
-                >
-                  <IconFont1 type="icon-wurenji" />
-                </Marker>
-              ))}
-              {path.map((item) => (
-                <Polyline
-                  path={item.route}
-                  showDir={true}
-                  style={{
-                    strokeWeight: 4,
-                    strokeColor: this.state.color[item.key],
-                  }}
-                />
-              ))}
+              {/* {this.props.moInfo === 1 && */}
+              {load_uav.map(
+                item =>
+                  this.state.need.indexOf(item.id) > -1 && (
+                    <Marker
+                      position={item.position}
+                      // icon={'//vdata.amap.com/icons/b18/1/2.png'}
+                      offset={{ x: -8, y: -12 }}
+                      title={item.key}
+                    >
+                      <IconFont1 type="icon-wurenji" />
+                    </Marker>
+                  )
+              )}
+              {/* {this.props.moInfo === 1 && */}
+              {path.map(
+                item =>
+                  this.state.need.indexOf(JSON.stringify(item.key)) > -1 && (
+                    <Polyline
+                      path={item.route}
+                      showDir={true}
+                      style={{
+                        strokeWeight: 4,
+                        strokeColor: this.state.color[item.key]
+                      }}
+                    />
+                  )
+              )}
             </Map>
           </div>
           <div className="my_input">
@@ -316,7 +358,7 @@ export default class Amap extends Component {
                     7: '7',
                     10: '10',
                     13: '13',
-                    16: '16',
+                    16: '16'
                   }}
                 />
               </Form.Item>
@@ -367,24 +409,26 @@ export default class Amap extends Component {
             </div>
             <div className="my_interact">
               <div style={{ position: 'relative', left: '10%', width: '80%' }}>
-                <Tabs defaultActiveKey="0" style={{ textAlign: 'center' }}>
-                  <TabPane tab="无人集群个体动作信息" key="0">
-                    <Table
-                      dataSource={this.props.ftInfo}
-                      //rowSelection={rowSelection}
-                    >
-                      <Column title="编号" dataIndex="id" fixed="left" />
-                      <Column title="动作序列" dataIndex="list" />
-                    </Table>
-                  </TabPane>
-                  <TabPane tab="无人集群个体任务信息" key="1">
-                    <Table dataSource={this.props.fmInfo}>
-                      <Column title="编号" dataIndex="id" />
-                      <Column title="执行任务" dataIndex="mission" />
-                      <Column title="代价" dataIndex="cost" />
-                    </Table>
-                  </TabPane>
-                </Tabs>
+                {this.props.moInfo === 1 && (
+                  <Tabs defaultActiveKey="0" style={{ textAlign: 'center' }}>
+                    <TabPane tab="无人集群个体动作信息" key="0">
+                      <Table
+                        dataSource={this.props.ftInfo}
+                        rowSelection={rowSelection}
+                      >
+                        <Column title="编号" dataIndex="id" fixed="left" />
+                        <Column title="动作序列" dataIndex="list" />
+                      </Table>
+                    </TabPane>
+                    <TabPane tab="无人集群个体任务信息" key="1">
+                      <Table dataSource={this.props.fmInfo}>
+                        <Column title="编号" dataIndex="id" />
+                        <Column title="执行任务" dataIndex="mission" />
+                        <Column title="代价" dataIndex="cost" />
+                      </Table>
+                    </TabPane>
+                  </Tabs>
+                )}
               </div>
             </div>
           </div>

@@ -15,6 +15,7 @@ export default {
     position: [],
     flight_mission: [],
     flight_todolist: [],
+    model: 1
     // flight_info: [
     //   {
     //     header: '0号无人机状态',
@@ -44,6 +45,7 @@ export default {
     *post_algo_profile({ payload }, sagaEffects) {
       const { call, put } = sagaEffects
       const response = yield call(myPost, payload)
+      yield put({ type: 'Model', payload: response })
       message.success(response['message'], 3)
     },
     *plan({ payload }, sagaEffects) {
@@ -51,9 +53,23 @@ export default {
       const response = yield call(myPost, payload)
       yield put({ type: 'Change', payload: response })
       console.log(response)
-    },
+    }
   },
   reducers: {
+    Model(state, { payload: datasets }) {
+      const next_todo_list = state.todo_list
+      const next_position = state.position
+      const next_flight_mission = state.flight_mission
+      const next_flight_todolist = state.flight_todolist
+      const next_model = datasets['model']
+      return {
+        todo_list: next_todo_list,
+        position: next_position,
+        flight_mission: next_flight_mission,
+        flight_todolist: next_flight_todolist,
+        model: next_model
+      }
+    },
     Change(state, { payload: datasets }) {
       // const next_mission_a = datasets["mission_a"];
       // const next_mission_b = datasets["mission_b"];
@@ -61,6 +77,7 @@ export default {
       const next_position = datasets['position']
       const next_flight_mission = datasets['flight_mission']
       const next_flight_todolist = datasets['flight_todolist']
+      const next_model = state.model
       //const next_flight_info = datasets['flight_info']
       //const next_mission_info = datasets['mission_info']
       // const next_current_cost = datasets["current_cost"];
@@ -74,6 +91,7 @@ export default {
         position: next_position,
         flight_mission: next_flight_mission,
         flight_todolist: next_flight_todolist,
+        model: next_model
         //flight_info: next_flight_info,
         //mission_info: next_mission_info,
         // current_cost: next_current_cost,
@@ -81,6 +99,6 @@ export default {
         // algo: next_algo,
         // trans: next_trans,
       }
-    },
-  },
+    }
+  }
 }

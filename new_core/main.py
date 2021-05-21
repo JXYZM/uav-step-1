@@ -8,6 +8,7 @@ manage module
 from copy import deepcopy
 from flight import Flight
 from core import SaPhase1, SaPhase2, SaPhaseAll
+from output import generate_flight_mission, generate_flight_todolist
 import math
 
 import json
@@ -25,6 +26,8 @@ SPEED_OF_FLIGHT = 15
 INTEL = True
 
 MAX_WEIGHT = 1000000
+
+MODEL = 0
 
 POINT = {}
 DIST = []
@@ -225,67 +228,46 @@ def handle_client():
     if tmp[0]=="-":
         data = request.files['file'].read()
         file_content = data.decode("utf-8")
-        global MISSIONS
-        MISSIONS = []
-        lines = file_content.splitlines()
-        for line in lines:
-            tmp = line.split()
-            MISSIONS.append([int(tmp[0]), int(tmp[1]), int(tmp[2])])
-        print(MISSIONS)
-        message = "success"
-        response_body = json.dumps({"status": message})
+        first_line = file_content.splitlines()[0]
+        # print(file_content)
+        if len(first_line.split()) == 3 and first_line.split()[0].isdigit():
+            global MISSIONS
+            MISSIONS = []
+            lines = file_content.splitlines()
+            for line in lines:
+                tmp = line.split()
+                MISSIONS.append([int(tmp[0]), int(tmp[1]), int(tmp[2])])
+            print(MISSIONS)
+            message = "success"
+            response_body = json.dumps({"status": message})
+        else:
+            response_body = json.dumps({"status": "fail"})
         return response_body
     else:
         input_from_ui = json.loads(tmp)
         t = input_from_ui["type"]
         if t==0:
-            print(input_from_ui)
+            # print(input_from_ui)
             print("Optimization goal: {}".format(input_from_ui['select']))
-            print("Intel algo: {}".format(input_from_ui['switch']))
-            global NUM_OF_FLIGHT, INTEL
+            # print("Intel algo: {}".format(input_from_ui['switch']))
+            global NUM_OF_FLIGHT, INTEL, MODEL
             NUM_OF_FLIGHT = input_from_ui['slider']
             INTEL = input_from_ui['switch']
-            response_body = json.dumps({"message": "save success"})
+            if input_from_ui['select'] == "最小化总等待时间":
+                MODEL = 1
+            response_body = json.dumps({"message": "save success", "model": MODEL})
             return response_body
         if t==1:
             print("planning...")
-            if INTEL:
-                manage()
-            else:
-                solve()
-            flight_mission = []
-            for i in range(NUM_OF_FLIGHT):
-                tmp = {}
-                tmp["key"] = str(i)
-                tmp["id"] = str(i)
-                tmp["mission"] = ""
-                for j in range(len(MISSION_B[i])):
-                    tmp["mission"] += str(MISSION_B[i][j][0])
-                    if j < len(MISSION_B[i]) - 1:
-                        tmp["mission"] += " , "
-                tmp["cost"] = "{:.2f}".format(CURRENT_COST[i])
-                flight_mission.append(tmp)
-            flight_todolist = []
-            for i in range(NUM_OF_FLIGHT):
-                tmp = {}
-                tmp["key"] = str(i)
-                tmp["id"] = str(i)
-                tmp["list"] = ""
-                for j in range(len(TODO_LIST[i])):
-                    tmp["list"] += " -> " + str(TODO_LIST[i][j]["point"]) + " : "
-                    tmp["list"] += "( "
-                    if "put" in TODO_LIST[i][j]["todo"].keys():
-                        tmp["list"] += "put : "
-                        for k in range(len(TODO_LIST[i][j]["todo"]["put"])):
-                            tmp["list"] += str(TODO_LIST[i][j]["todo"]["put"][k]) + " "
-                    if "get" in TODO_LIST[i][j]["todo"].keys():
-                        tmp["list"] += "get : "
-                        for k in range(len(TODO_LIST[i][j]["todo"]["get"])):
-                            tmp["list"] += str(TODO_LIST[i][j]["todo"]["get"][k]) + " "
-                    tmp["list"] += ")"
-                flight_todolist.append(tmp)
-            response_body = json.dumps({"todo_list": TODO_LIST, "position": POSITION, "flight_mission": flight_mission, "flight_todolist": flight_todolist})
-            return response_body
+            if MODEL == 1:
+                if INTEL:
+                    manage()
+                else:
+                    solve()
+                flight_mission = generate_flight_mission(NUM_OF_FLIGHT, deepcopy(MISSION_B), deepcopy(CURRENT_COST))
+                flight_todolist = generate_flight_todolist(NUM_OF_FLIGHT, TODO_LIST)
+                response_body = json.dumps({"todo_list": TODO_LIST, "position": POSITION, "flight_mission": flight_mission, "flight_todolist": flight_todolist})
+                return response_body
 
 
 if __name__ == '__main__':
