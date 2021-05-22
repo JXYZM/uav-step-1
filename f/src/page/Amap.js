@@ -119,7 +119,11 @@ export default class Amap extends Component {
         'coral',
         'crimson',
         'darkolivegreen',
-        'grey'
+        'grey',
+        'darkred',
+        'darkseagreen',
+        'dodgerblue',
+        'navy'
       ],
       button_disabled: true,
       selectedRowKeys: [],

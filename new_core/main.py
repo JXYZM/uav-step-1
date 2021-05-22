@@ -7,8 +7,8 @@ manage module
 
 from copy import deepcopy
 from flight import Flight
-from core import SaPhase1, SaPhase2, SaPhaseAll
-from output import generate_flight_mission, generate_flight_todolist
+from core import handle
+from output import generate_flight_mission, generate_flight_todolist, small2big
 import math
 
 import json
@@ -25,8 +25,6 @@ NUM_OF_FLIGHT = 5
 SPEED_OF_FLIGHT = 15
 INTEL = True
 
-MAX_WEIGHT = 1000000
-
 MODEL = 0
 
 POINT = {}
@@ -40,8 +38,6 @@ MISSION_B = []
 TODO_LIST = []
 POSITION = []
 CURRENT_COST = []
-
-WEIGHT_LOAD = 0.5
 
 def initialize_point():
     global POINT
@@ -121,90 +117,36 @@ def generate_cost_current(content, flight_id):
                 cost_all += time_all * len(TODO_LIST[flight_id][i]["todo"]["put"])
         return cost_all
 
-def generate_route(a, b):
-    route = []
-    for i in range(len(a)):
-        route.append(a[i][2])
-    for i in range(len(b)):
-        route.append(b[i][1])
-    return deepcopy(list(set(route)))
-
-def handle_each_mission(mission):
-
+def initialize_cost():
+    ret = {}
     for i in range(NUM_OF_FLIGHT):
-        POSITION[i] = FLIGHT[i].get_position()
-    cost = generate_distance(deepcopy(POSITION))
+        content = [[float(0) for x in range(len(DIST))] for y in range(len(DIST))]
+        for j in range(0, len(DIST)):
+            for k in range(j+1, len(DIST)):
+                content[j][k] = DIST[j][k] / SPEED_OF_FLIGHT
+                content[k][j] = DIST[k][j] / SPEED_OF_FLIGHT
+        ret[i] = content
+    return deepcopy(ret)
 
-    current_cost = {}
-    new_cost = {}
-    delta_cost = {}
-    flight_time = {}
-    mission_b_temp = {}
-    todo_list_temp = {}
-
+def generate_vector():
+    ret = []
     for i in range(NUM_OF_FLIGHT):
-
-        current_cost[i] = generate_cost_current(deepcopy(cost[i]), i)
-
-        b_temp = deepcopy(MISSION_B[i])
-        b_temp.append(mission)
-        a_temp = deepcopy(MISSION_A[i])
-
-        route1 = generate_route(deepcopy(a_temp), deepcopy(b_temp))
-        sa_phase1 = SaPhase1(deepcopy(a_temp), deepcopy(b_temp), deepcopy(cost[i]))
-        """
-        A + B' = route1 + todolist1 + A' + cost1 + time1
-        """
-        min_route1, cost_all1, time_all1, todo_list1, a_new = sa_phase1.min_cost(deepcopy(route1))
-
-        route2 = generate_route(deepcopy(a_new), deepcopy([]))
-        sa_phase2 = SaPhase2(deepcopy(a_new), deepcopy(cost[i]), min_route1[-1])
-        """
-        A' = route2 + todolist2 + cost2 + time2
-        """
-        min_route2, cost_all2, time_all2, todo_list2 = sa_phase2.min_cost(deepcopy(route2))
-
-        todo_list = todo_list1 + todo_list2
-
-        sa_phase_all = SaPhaseAll(deepcopy(a_temp), deepcopy(b_temp), deepcopy(cost[i]))
-        """
-        cost_new + todo_list_new = todo_list
-        """
-        cost_time_all, flight_time_all, todo_list_all = sa_phase_all.min_cost(deepcopy(todo_list))
-        new_cost[i] = cost_time_all
-
-        print("{} | {}".format(current_cost[i], new_cost[i]))
-
-        delta_cost[i] = (new_cost[i] - current_cost[i]) + WEIGHT_LOAD * current_cost[i]
-        flight_time[i] = flight_time_all
-        mission_b_temp[i] = deepcopy(b_temp)
-        todo_list_temp[i] = deepcopy(todo_list_all)
-
-    index = -1
-    min_delta = MAX_WEIGHT
-
-    for i in range(NUM_OF_FLIGHT):
-        if delta_cost[i] < min_delta:
-            index = i
-            min_delta = delta_cost[i]
-
-    MISSION_B[index] = deepcopy(mission_b_temp[index])
-    TODO_LIST[index] = deepcopy(todo_list_temp[index])
-
-    for i in range(NUM_OF_FLIGHT):
-        CURRENT_COST[i] = generate_cost_current(deepcopy(cost[i]), i)
-    print(MISSION_A)
-    print(MISSION_B)
-    print(TODO_LIST)
-    print(CURRENT_COST)
-    print("\n\n")
+        tmp = [float(0) for x in range(len(POINT))]
+        for j in range(len(POINT)):
+            tmp[j] = math.sqrt(pow(POINT[j][0] - POSITION[i][0], 2) + pow(POINT[j][1] - POSITION[i][1], 2)) / SPEED_OF_FLIGHT
+        ret.append(tmp)
+    return deepcopy(ret)
 
 def manage():
-    global MISSIONS
+    global TODO_LIST, MISSION_B, CURRENT_COST
     init_center()
+    cost = initialize_cost()
+    cost_vector = generate_vector()
     for m in MISSIONS:
-        handle_each_mission(deepcopy(m))
-        print(m[0])
+        TODO_LIST, MISSION_B, CURRENT_COST = handle(m, deepcopy(TODO_LIST), MISSION_A, deepcopy(MISSION_B), cost, cost_vector, NUM_OF_FLIGHT)
+    for i in range(NUM_OF_FLIGHT):
+        TODO_LIST[i] = small2big(deepcopy(TODO_LIST[i]))
+    print(sum(CURRENT_COST))
 
 def solve():
     global MISSIONS
