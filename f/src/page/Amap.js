@@ -3,7 +3,7 @@ Amap.js
 主界面
 */
 import React, { Component } from 'react'
-import { Map, MouseTool, Marker, Polyline } from 'react-amap'
+import { Map, MouseTool, Marker, Polyline, Circle } from 'react-amap'
 import { connect } from 'dva'
 import {
   Button,
@@ -63,9 +63,12 @@ const mapStateToProps = ({ [namespace]: n }) => {
     pInfo: n.position,
     fmInfo: n.flight_mission,
     ftInfo: n.flight_todolist,
-    moInfo: n.model
+    moInfo: n.model,
     // fInfo: n.flight_info,
     // mInfo: n.mission_info,
+    bInfo: n.boarder,
+    uInfo: n.uav,
+    iInfo: n.info
   }
 }
 
@@ -81,9 +84,18 @@ const mapDispatchToProps = dispatch => {
       }
       dispatch(action)
     },
-    plan: () => {
+    plan1: () => {
       const action = {
-        type: `${namespace}/plan`,
+        type: `${namespace}/plan1`,
+        payload: {
+          type: 1
+        }
+      }
+      dispatch(action)
+    },
+    plan2: () => {
+      const action = {
+        type: `${namespace}/plan2`,
         payload: {
           type: 1
         }
@@ -125,6 +137,7 @@ export default class Amap extends Component {
         'dodgerblue',
         'navy'
       ],
+      color2: ['yellow', 'blue', 'red', 'green'],
       button_disabled: true,
       selectedRowKeys: [],
       need: [
@@ -211,11 +224,84 @@ export default class Amap extends Component {
     this.setState({ selectedRowKeys, need: selectedRowKeys })
   }
 
+  onClearSelect = () => {
+    this.setState({
+      need: [
+        '0',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9',
+        '10',
+        '11',
+        '12',
+        '13',
+        '14',
+        '15',
+        '16',
+        '17'
+      ]
+    })
+  }
+
+  display_boarder() {
+    console.log(this.props.bInfo)
+    let temp = []
+    for (let a of this.props.bInfo) {
+      temp = temp.concat({
+        longitude: a[0],
+        latitude: a[1]
+      })
+    }
+    let temp_path = []
+    temp_path = temp_path.concat({ route: temp })
+    return [temp_path]
+  }
+
+  display_uav() {
+    let temp = []
+    let count = 0
+    for (let a of this.props.uInfo) {
+      temp = temp.concat({
+        key: 'uav' + JSON.stringify(count),
+        position: {
+          longitude: a['longitude'],
+          latitude: a['latitude']
+        },
+        center: {
+          longitude: a['move_center'][0],
+          latitude: a['move_center'][1]
+        },
+        r: a['r_uav'],
+        route: a['r_move'],
+        color: a['key'],
+        id: JSON.stringify(count)
+      })
+      count = count + 1
+    }
+    return [temp]
+  }
+
   render() {
     var load_uav = []
     var path = []
     if (this.props.moInfo === 1) {
       ;[load_uav, path] = this.display()
+    }
+
+    var boarder = []
+    if (this.props.moInfo === 2) {
+      ;[boarder] = this.display_boarder()
+    }
+
+    var uav = []
+    if (this.props.moInfo === 2) {
+      ;[uav] = this.display_uav()
     }
 
     const onSave = values => {
@@ -322,6 +408,61 @@ export default class Amap extends Component {
                     />
                   )
               )}
+              {uav.map(
+                item =>
+                  this.state.need.indexOf(item.id) > -1 && (
+                    <Marker
+                      position={item.position}
+                      // icon={'//vdata.amap.com/icons/b18/1/2.png'}
+                      offset={{ x: -8, y: -12 }}
+                      title={item.key}
+                    >
+                      <IconFont1 type="icon-wurenji" />
+                    </Marker>
+                  )
+              )}
+              {uav.map(
+                item =>
+                  this.state.need.indexOf(item.id) > -1 && (
+                    <Circle
+                      center={item.position}
+                      radius={item.r}
+                      style={{
+                        fillColor: this.state.color2[item.color],
+                        fillOpacity: 0.1,
+                        strokeColor: 'black',
+                        strokeOpacity: 0.5,
+                        strokeWeight: 1
+                      }}
+                    />
+                  )
+              )}
+              {uav.map(
+                item =>
+                  this.state.need.indexOf(item.id) > -1 && (
+                    <Circle
+                      center={item.center}
+                      radius={item.route}
+                      style={{
+                        fillColor: 'white',
+                        fillOpacity: 0,
+                        strokeColor: 'black',
+                        strokeOpacity: 1,
+                        strokeWeight: 3
+                      }}
+                    />
+                  )
+              )}
+              {boarder.map(item => (
+                <Polyline
+                  path={item.route}
+                  showDir={false}
+                  style={{
+                    strokeWeight: 3,
+                    strokeColor: 'purple'
+                  }}
+                />
+              ))}
             </Map>
           </div>
           <div className="my_input">
@@ -395,21 +536,42 @@ export default class Amap extends Component {
           </div>
           <div className="my_display">
             <div className="my_start">
-              <Button
-                type="primary"
-                htmlType="button"
-                size="large"
-                disabled={this.state.button_disabled}
-                block
-              >
-                <a
-                  onClick={() => {
-                    this.props.plan()
-                  }}
+              {this.props.moInfo === 1 && (
+                <Button
+                  type="primary"
+                  htmlType="button"
+                  size="large"
+                  disabled={this.state.button_disabled}
+                  block
                 >
-                  Plan
-                </a>
-              </Button>
+                  <a
+                    onClick={() => {
+                      this.props.plan1()
+                      this.onClearSelect()
+                    }}
+                  >
+                    Plan
+                  </a>
+                </Button>
+              )}
+              {this.props.moInfo === 2 && (
+                <Button
+                  type="primary"
+                  htmlType="button"
+                  size="large"
+                  disabled={this.state.button_disabled}
+                  block
+                >
+                  <a
+                    onClick={() => {
+                      this.props.plan2()
+                      this.onClearSelect()
+                    }}
+                  >
+                    Plan
+                  </a>
+                </Button>
+              )}
             </div>
             <div className="my_interact">
               <div style={{ position: 'relative', left: '10%', width: '80%' }}>
@@ -429,6 +591,22 @@ export default class Amap extends Component {
                         <Column title="编号" dataIndex="id" />
                         <Column title="执行任务" dataIndex="mission" />
                         <Column title="代价" dataIndex="cost" />
+                      </Table>
+                    </TabPane>
+                  </Tabs>
+                )}
+                {this.props.moInfo === 2 && (
+                  <Tabs defaultActiveKey="0" style={{ textAlign: 'center' }}>
+                    <TabPane tab="无人集群个体状态信息" key="0">
+                      <Table
+                        dataSource={this.props.iInfo}
+                        rowSelection={rowSelection}
+                      >
+                        <Column title="编号" dataIndex="id" fixed="left" />
+                        <Column title="位置" dataIndex="position" />
+                        <Column title="巡航速度" dataIndex="velocity" />
+                        <Column title="中继半径" dataIndex="radius" />
+                        <Column title="巡航半径" dataIndex="route" />
                       </Table>
                     </TabPane>
                   </Tabs>

@@ -8,7 +8,8 @@ manage module
 from copy import deepcopy
 from flight import Flight
 from core import handle
-from output import generate_flight_mission, generate_flight_todolist, small2big
+from relay_core import LATITUDE, LONGITUDE, handle_relay
+from output import generate_flight_mission, generate_flight_todolist, small2big, generate_relay
 import math
 
 import json
@@ -38,6 +39,10 @@ MISSION_B = []
 TODO_LIST = []
 POSITION = []
 CURRENT_COST = []
+
+CENTER = [0, 0]
+RADIUS = 0
+VELOCITY = 0
 
 def initialize_point():
     global POINT
@@ -113,8 +118,8 @@ def generate_cost_current(content, flight_id):
                 time_all += content[0][point_id + 1]
             else:
                 time_all += content[TODO_LIST[flight_id][i - 1]["point"] + 1][point_id + 1]
-            if "put" in TODO_LIST[flight_id][i]["todo"].keys():
-                cost_all += time_all * len(TODO_LIST[flight_id][i]["todo"]["put"])
+            if "put" in TODO_LIST[flight_id][i].keys():
+                cost_all += time_all * len(TODO_LIST[flight_id][i]["put"])
         return cost_all
 
 def initialize_cost():
@@ -157,11 +162,22 @@ def solve():
         ep = m[2]
         flight_id = mission_id % NUM_OF_FLIGHT
         MISSION_B[flight_id].append(deepcopy(m))
-        TODO_LIST[flight_id].append({"point": sp, "todo": {"get": [mission_id]}})
-        TODO_LIST[flight_id].append({"point": ep, "todo": {"put": [mission_id]}})
+        TODO_LIST[flight_id].append({"point": sp, "get": [mission_id]})
+        TODO_LIST[flight_id].append({"point": ep, "put": [mission_id]})
     cost = generate_distance(deepcopy(POSITION))
     for i in range(NUM_OF_FLIGHT):
         CURRENT_COST[i] = generate_cost_current(deepcopy(cost[i]), i)
+
+def generate_boarder():
+    boarder = []
+    longitude = RADIUS / LONGITUDE
+    latitude = RADIUS / LATITUDE
+    boarder.append([CENTER[0] - longitude, CENTER[1] + latitude])
+    boarder.append([CENTER[0] + longitude, CENTER[1] + latitude])
+    boarder.append([CENTER[0] + longitude, CENTER[1] - latitude])
+    boarder.append([CENTER[0] - longitude, CENTER[1] - latitude])
+    boarder.append([CENTER[0] - longitude, CENTER[1] + latitude])
+    return deepcopy(boarder)
 
 @app.route('/dev/', methods=['POST'])
 def handle_client():
@@ -171,7 +187,7 @@ def handle_client():
         data = request.files['file'].read()
         file_content = data.decode("utf-8")
         first_line = file_content.splitlines()[0]
-        # print(file_content)
+        print(file_content)
         if len(first_line.split()) == 3 and first_line.split()[0].isdigit():
             global MISSIONS
             MISSIONS = []
@@ -180,6 +196,22 @@ def handle_client():
                 tmp = line.split()
                 MISSIONS.append([int(tmp[0]), int(tmp[1]), int(tmp[2])])
             print(MISSIONS)
+            message = "success"
+            response_body = json.dumps({"status": message})
+        elif len(first_line.split()) == 3 and first_line.split()[0]=="center":
+            global CENTER, RADIUS, VELOCITY
+            lines = file_content.splitlines()
+            for line in lines:
+                tmp = line.split()
+                if tmp[0] == "center":
+                    CENTER = [float(tmp[1]), float(tmp[2])]
+                if tmp[0] == "radius":
+                    RADIUS = float(tmp[1])
+                if tmp[0] == "velocity":
+                    VELOCITY = float(tmp[2])
+            # print(CENTER)
+            # print(RADIUS)
+            # print(VELOCITY)
             message = "success"
             response_body = json.dumps({"status": message})
         else:
@@ -197,6 +229,8 @@ def handle_client():
             INTEL = input_from_ui['switch']
             if input_from_ui['select'] == "最小化总等待时间":
                 MODEL = 1
+            elif input_from_ui['select'] == "无人机100%时间持续覆盖":
+                MODEL = 2
             response_body = json.dumps({"message": "save success", "model": MODEL})
             return response_body
         if t==1:
@@ -209,6 +243,12 @@ def handle_client():
                 flight_mission = generate_flight_mission(NUM_OF_FLIGHT, deepcopy(MISSION_B), deepcopy(CURRENT_COST))
                 flight_todolist = generate_flight_todolist(NUM_OF_FLIGHT, TODO_LIST)
                 response_body = json.dumps({"todo_list": TODO_LIST, "position": POSITION, "flight_mission": flight_mission, "flight_todolist": flight_todolist})
+                return response_body
+            elif MODEL == 2:
+                boarder = generate_boarder()
+                uav = handle_relay(NUM_OF_FLIGHT, deepcopy(CENTER), RADIUS, VELOCITY)
+                info = generate_relay(uav)
+                response_body = json.dumps({"uav": uav, "info": info, "boarder": boarder})
                 return response_body
 
 

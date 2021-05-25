@@ -69,3 +69,17 @@ def small2big(todolist):
                         ret[-1]["get"] = []
                     ret[-1]["get"].append(todolist[i]["get"])
     return deepcopy(ret)
+
+def generate_relay(uav):
+    info = []
+    for i in range(len(uav)):
+        tmp = {}
+        tmp["key"] = str(i)
+        tmp["id"] = str(i)
+        tmp["position"] = "{:.4f} , {:.4f}".format(uav[i]["longitude"], uav[i]["latitude"])
+        tmp["center"] = "{:.4f} , {:.4f}".format(uav[i]["move_center"][0], uav[i]["move_center"][1])
+        tmp["velocity"] = uav[i]["velocity"]
+        tmp["radius"] = uav[i]["r_uav"]
+        tmp["route"] = uav[i]["r_move"]
+        info.append(tmp)
+    return deepcopy(info)
